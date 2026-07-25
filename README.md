@@ -1,3 +1,4 @@
+
 # Salon Booking System
 
 A full-stack online salon booking platform with three separate roles — **Admin**, **Vendor**, and **User (Customer)** — each with their own dashboard and permissions.
@@ -147,3 +148,4 @@ Pull requests are welcome. For major changes, please open an issue first to disc
 ## 📄 License
 
 This project is licensed under the MIT License — update this section if you choose a different license.
+
