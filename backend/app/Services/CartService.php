@@ -24,4 +24,18 @@ class CartService
         $item->save();
         return $item;
     }
+
+    public function removeItem(int $userId, int $cartItemId): void
+    {
+        $cart = $this->getOrCreate($userId);
+        CartItem::where('id', $cartItemId)->where('cart_id', $cart->id)->delete();
+    }
+
+    public function clearCart(int $userId): void
+    {
+        $cart = Cart::where('user_id', $userId)->first();
+        if ($cart) {
+            $cart->items()->delete();
+        }
+    }
 }

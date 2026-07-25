@@ -17,7 +17,12 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        $admin = User::updateOrCreate(['email' => 'admin@lumina.test'], ['name' => 'Admin User', 'password' => Hash::make('password123'), 'role' => 'admin']);
+        $this->call([
+            AdminSeeder::class,
+            ProductCategorySeeder::class,
+            ServiceCategorySeeder::class,
+        ]);
+
         $vendorUser = User::updateOrCreate(['email' => 'vendor@lumina.test'], ['name' => 'Vendor User', 'password' => Hash::make('password123'), 'role' => 'vendor']);
         $customer = User::updateOrCreate(['email' => 'customer@lumina.test'], ['name' => 'Customer User', 'password' => Hash::make('password123'), 'role' => 'customer']);
 

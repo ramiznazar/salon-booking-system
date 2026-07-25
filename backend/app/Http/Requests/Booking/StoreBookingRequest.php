@@ -19,6 +19,6 @@ class StoreBookingRequest extends FormRequest
      */
     public function rules(): array
     {
-        return ['vendor_id' => ['required', 'exists:vendors,id'], 'service_id' => ['required', 'exists:services,id'], 'user_id' => ['required', 'exists:users,id'], 'scheduled_at' => ['required', 'date'], 'notes' => ['nullable', 'string']];
+        return ['vendor_id' => ['required', 'exists:vendors,id'], 'service_id' => ['required', 'exists:services,id'], 'scheduled_at' => ['required', 'date'], 'notes' => ['nullable', 'string']];
     }
 }

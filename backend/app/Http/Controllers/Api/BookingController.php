@@ -13,6 +13,11 @@ class BookingController extends Controller
 {
     public function __construct(protected BookingService $bookingService) {}
     public function index() { try { return ApiResponse::success(Booking::with(['vendor', 'service'])->paginate(20)); } catch (Throwable $e) { return ApiResponse::error($e->getMessage()); } }
-    public function store(StoreBookingRequest $request) { try { return ApiResponse::created($this->bookingService->create($request->validated())); } catch (Throwable $e) { return ApiResponse::error($e->getMessage()); } }
+    public function store(StoreBookingRequest $request) {
+        try {
+            $data = array_merge($request->validated(), ['user_id' => auth()->id()]);
+            return ApiResponse::created($this->bookingService->create($data));
+        } catch (Throwable $e) { return ApiResponse::error($e->getMessage()); }
+    }
     public function updateStatus(Booking $booking, string $status) { try { return ApiResponse::success($this->bookingService->updateStatus($booking, $status), 'Status updated'); } catch (Throwable $e) { return ApiResponse::error($e->getMessage()); } }
 }

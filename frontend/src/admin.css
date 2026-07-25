@@ -1,0 +1,232 @@
+@import "tailwindcss/preflight" layer(base);
+@import "tailwindcss/theme" layer(theme);
+@import "tailwindcss/utilities" layer(utilities);
+
+/* Scope preflight reset only inside admin shell */
+.admin-shell *,
+.admin-shell *::before,
+.admin-shell *::after {
+  box-sizing: border-box;
+}
+
+.admin-shell {
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, sans-serif;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+.admin-shell h1,
+.admin-shell h2,
+.admin-shell h3,
+.admin-shell h4,
+.admin-shell h5,
+.admin-shell h6 {
+  font-size: inherit;
+  font-weight: inherit;
+  margin: 0;
+}
+
+.admin-shell p {
+  margin: 0;
+}
+
+.admin-shell table {
+  border-collapse: collapse;
+  border-spacing: 0;
+}
+
+.admin-shell button,
+.admin-shell input,
+.admin-shell select,
+.admin-shell textarea {
+  font-family: inherit;
+  font-size: 100%;
+  line-height: inherit;
+  margin: 0;
+}
+
+/* Hide scrollbars in admin containers but keep scrolling enabled */
+.admin-shell .admin-scroll {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.admin-shell .overflow-y-auto,
+.admin-shell .overflow-x-auto {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.admin-shell .admin-scroll::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
+.admin-shell .overflow-y-auto::-webkit-scrollbar,
+.admin-shell .overflow-x-auto::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
+.admin-shell .admin-action-icon {
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.2);
+}
+
+.admin-shell .admin-action-icon:hover {
+  transform: translateY(-1px);
+}
+
+.admin-shell .admin-page-heading {
+  font-size: 1.5rem;
+  line-height: 2rem;
+  font-weight: 700;
+  color: #111827;
+}
+
+.admin-shell .admin-page-subheading {
+  margin-top: 0.25rem;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  color: #6b7280;
+}
+
+.admin-shell .admin-filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.admin-shell .admin-filter-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.admin-shell .admin-filter-input,
+.admin-shell .admin-filter-select {
+  height: 2.5rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.625rem;
+  padding: 0 0.75rem;
+  font-size: 0.875rem;
+  background: #fff;
+}
+
+.admin-shell .admin-filter-input:focus,
+.admin-shell .admin-filter-select:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px #c7d2fe;
+  border-color: #6366f1;
+}
+
+.admin-shell .admin-filter-button,
+.admin-shell .admin-pagination-button {
+  border: 1px solid transparent;
+  border-radius: 0.625rem;
+  padding: 0 0.95rem;
+  height: 2.5rem;
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+
+.admin-shell .admin-filter-button {
+  background: #4f46e5;
+  color: #fff;
+}
+
+.admin-shell .admin-filter-button:hover {
+  background: #4338ca;
+}
+
+.admin-shell .admin-filter-button:focus-visible,
+.admin-shell .admin-pagination-button:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px #c7d2fe;
+  border-color: #6366f1;
+}
+
+.admin-shell .admin-table-shell {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 1rem;
+  overflow: hidden;
+}
+
+.admin-shell .admin-table-head {
+  background: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.admin-shell .admin-status-chip {
+  display: inline-block;
+  font-size: 0.75rem;
+  line-height: 1rem;
+  padding: 0.25rem 0.625rem;
+  border-radius: 9999px;
+  font-weight: 600;
+}
+
+.admin-shell .admin-chip-success {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.admin-shell .admin-chip-warning {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.admin-shell .admin-chip-danger {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.admin-shell .admin-chip-info {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.admin-shell .admin-chip-neutral {
+  background: #e5e7eb;
+  color: #4b5563;
+}
+
+.admin-shell .admin-chip-accent {
+  background: #ede9fe;
+  color: #6d28d9;
+}
+
+.admin-shell .admin-pagination {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  border-top: 1px solid #f1f5f9;
+}
+
+.admin-shell .admin-pagination-button {
+  border-color: #d1d5db;
+  background: #fff;
+  color: #374151;
+  height: 2rem;
+  padding: 0 0.75rem;
+}
+
+.admin-shell .admin-pagination-button:hover {
+  background: #f9fafb;
+}
+
+.admin-shell .admin-pagination-button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* Reset customer body styles when inside admin */
+body:has(.admin-shell) {
+  background: #f9fafb !important;
+  color: #111827;
+  margin: 0;
+}

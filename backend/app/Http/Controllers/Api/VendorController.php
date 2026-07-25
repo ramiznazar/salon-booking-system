@@ -13,10 +13,11 @@ class VendorController extends Controller
 {
     public function __construct(protected VendorService $vendorService) {}
 
-    public function index()
+    public function index(\Illuminate\Http\Request $request)
     {
         try {
-            return ApiResponse::success($this->vendorService->listPublic());
+            $filters = $request->only(['search', 'city', 'sort']);
+            return ApiResponse::success($this->vendorService->listPublic($filters));
         } catch (Throwable $e) {
             return ApiResponse::error($e->getMessage());
         }
@@ -34,6 +35,7 @@ class VendorController extends Controller
     public function show(Vendor $vendor)
     {
         try {
+            abort_if($vendor->status !== 'approved', 404, 'Vendor not found');
             return ApiResponse::success($vendor->load(['services', 'products']));
         } catch (Throwable $e) {
             return ApiResponse::error($e->getMessage());

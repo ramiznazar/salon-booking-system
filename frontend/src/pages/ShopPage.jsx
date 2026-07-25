@@ -1,63 +1,126 @@
-import { Link } from 'react-router-dom'
-import { products, vendors } from '../data/mockData'
+import { useEffect, useMemo, useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
+import api from '../api/axios'
+import { useCart } from '../context/CartContext'
+import { useAppAuth } from '../context/AppAuthContext'
+import { useTranslation } from 'react-i18next'
+import { getLocalizedField } from '../utils/localize'
+
+const ITEMS_PER_PAGE = 6
+const FALLBACK_SERVICE = 'https://images.unsplash.com/photo-1515377905703-c4788e51af15?auto=format&fit=crop&w=1000&q=80'
+const FALLBACK_PRODUCT = 'https://images.unsplash.com/photo-1556228578-8c89e6adf883?auto=format&fit=crop&w=1000&q=80'
+const API_ORIGIN = new URL(api.defaults.baseURL).origin
+
+function resolveImageUrl(url) {
+  if (!url) return ''
+  if (/^https?:\/\//i.test(url)) {
+    try {
+      const parsed = new URL(url)
+      const isLocalHost = parsed.hostname === 'localhost' || parsed.hostname === '127.0.0.1'
+      if (isLocalHost && parsed.pathname.startsWith('/storage/') && parsed.origin !== API_ORIGIN) {
+        return `${API_ORIGIN}${parsed.pathname}`
+      }
+    } catch {
+      return url
+    }
+    return url
+  }
+  return `${API_ORIGIN}${url.startsWith('/') ? '' : '/'}${url}`
+}
 
 function ShopPage() {
-  const catalogItems = [
-    {
-      id: 's1',
-      type: 'Service',
-      name: 'Signature Hydrating Facial',
-      brand: 'Glow Studio',
-      price: 120,
-      image:
-        'https://images.unsplash.com/photo-1515377905703-c4788e51af15?auto=format&fit=crop&w=1000&q=80',
-    },
-    {
-      id: 'p1',
-      type: 'Product',
-      name: 'Purifying Face Wash',
-      brand: 'Vita Naturals',
-      price: 34,
-      image:
-        'https://images.unsplash.com/photo-1556228578-8c89e6adf883?auto=format&fit=crop&w=1000&q=80',
-    },
-    {
-      id: 'p2',
-      type: 'Product',
-      name: 'Midnight Jasmine Eau',
-      brand: 'Noir Fragrance',
-      price: 85,
-      image:
-        'https://images.unsplash.com/photo-1592945403244-b3fbafd7f539?auto=format&fit=crop&w=1000&q=80',
-    },
-    {
-      id: 'p3',
-      type: 'Product',
-      name: 'Hyaluronic Acid Toner',
-      brand: 'Aether',
-      price: 30,
-      image:
-        'https://images.unsplash.com/photo-1620916566398-39f1143ab7be?auto=format&fit=crop&w=1000&q=80',
-    },
-    {
-      id: 's2',
-      type: 'Service',
-      name: 'Full Glam Makeup Application',
-      brand: 'Artistry by Lane',
-      price: 95,
-      image:
-        'https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?auto=format&fit=crop&w=1000&q=80',
-    },
-    ...products.slice(0, 1).map((product) => ({
-      id: `p-${product.id}`,
-      type: 'Product',
-      name: product.name,
-      brand: vendors.find((entry) => entry.id === product.vendorId)?.name || 'Vendor',
-      price: product.price,
-      image:
-        'https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?auto=format&fit=crop&w=1000&q=80',
-    })),
-  ]
+  const { i18n } = useTranslation()
+  const { addToCart } = useCart()
+  const { isAuthenticated, isCustomer } = useAppAuth()
+  const navigate = useNavigate()
+  const [services, setServices] = useState([])
+  const [products, setProducts] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  const [cartFeedback, setCartFeedback] = useState({})
+  const [typeFilter, setTypeFilter] = useState('all')
+  const [priceRange, setPriceRange] = useState('all')
+  const [sortBy, setSortBy] = useState('relevance')
+  const [currentPage, setCurrentPage] = useState(1)
+
+  useEffect(() => {
+    setLoading(true)
+    setError('')
+    Promise.all([
+      api.get('/services'),
+      api.get('/products'),
+    ]).then(([sRes, pRes]) => {
+      const serviceList = (sRes.data.data?.data || sRes.data.data || []).map(s => ({ ...s, _type: 'service' }))
+      const productList = (pRes.data.data?.data || pRes.data.data || []).map(p => ({ ...p, _type: 'product' }))
+      setServices(serviceList)
+      setProducts(productList)
+    }).catch(() => {
+      setError('Unable to load shop catalog right now.')
+    }).finally(() => setLoading(false))
+  }, [])
+
+  const catalogItems = useMemo(() => {
+    const merged = [...services, ...products]
+    const typeFiltered = typeFilter === 'all'
+      ? merged
+      : merged.filter(i => i._type === typeFilter)
+
+    const filtered = typeFiltered.filter((item) => {
+      const price = Number(item.price)
+      if (priceRange === '0_49') return price >= 0 && price <= 49
+      if (priceRange === '50_99') return price >= 50 && price <= 99
+      if (priceRange === '100_plus') return price >= 100
+      return true
+    })
+
+    const sorted = [...filtered]
+    if (sortBy === 'price_asc') {
+      sorted.sort((a, b) => Number(a.price) - Number(b.price))
+    } else if (sortBy === 'price_desc') {
+      sorted.sort((a, b) => Number(b.price) - Number(a.price))
+    } else if (sortBy === 'latest') {
+      sorted.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0))
+    }
+
+    return sorted
+  }, [services, products, typeFilter, priceRange, sortBy])
+
+  const allCount = services.length + products.length
+  const productCount = products.length
+  const serviceCount = services.length
+
+  const totalCount = catalogItems.length
+  const totalPages = Math.max(1, Math.ceil(totalCount / ITEMS_PER_PAGE))
+
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [typeFilter, priceRange, sortBy, totalCount])
+
+  const safePage = Math.min(currentPage, totalPages)
+  const startIdx = (safePage - 1) * ITEMS_PER_PAGE
+  const endIdx = startIdx + ITEMS_PER_PAGE
+  const paginatedItems = catalogItems.slice(startIdx, endIdx)
+
+  const clearFilters = () => {
+    setTypeFilter('all')
+    setPriceRange('all')
+    setSortBy('relevance')
+    setCurrentPage(1)
+  }
+
+  const handleAddToCart = async (item, buyNow = false) => {
+    if (!isAuthenticated || !isCustomer) { navigate('/login'); return }
+    setCartFeedback(prev => ({ ...prev, [item.id]: 'adding' }))
+    const result = await addToCart(item, 1)
+    if (result.success) {
+      setCartFeedback(prev => ({ ...prev, [item.id]: 'added' }))
+      setTimeout(() => setCartFeedback(prev => ({ ...prev, [item.id]: null })), 1800)
+      if (buyNow) navigate('/checkout')
+    } else {
+      setCartFeedback(prev => ({ ...prev, [item.id]: 'error' }))
+      setTimeout(() => setCartFeedback(prev => ({ ...prev, [item.id]: null })), 2000)
+    }
+  }
 
   return (
     <section className="shop-reference-page">
@@ -73,16 +136,24 @@ function ShopPage() {
         <div className="shop-toolbar">
           <div className="shop-toolbar-left">
             <strong>Filters</strong>
-            <button type="button">Clear all</button>
-            <span>Showing 1-6 of 124 results</span>
+            <button type="button" onClick={clearFilters}>Clear all</button>
+            <span>
+              Showing {totalCount === 0 ? 0 : startIdx + 1}-{Math.min(endIdx, totalCount)} of {totalCount} results
+            </span>
           </div>
           <div className="shop-toolbar-right">
+            <label htmlFor="typeFilter">Type</label>
+            <select id="typeFilter" value={typeFilter} onChange={e => setTypeFilter(e.target.value)}>
+              <option value="all">All</option>
+              <option value="product">Products</option>
+              <option value="service">Services</option>
+            </select>
             <label htmlFor="sortBy">Sort by</label>
-            <select id="sortBy">
-              <option>Relevance</option>
-              <option>Newest</option>
-              <option>Price low-high</option>
-              <option>Price high-low</option>
+            <select id="sortBy" value={sortBy} onChange={e => setSortBy(e.target.value)}>
+              <option value="relevance">Relevance</option>
+              <option value="latest">Newest</option>
+              <option value="price_asc">Price low-high</option>
+              <option value="price_desc">Price high-low</option>
             </select>
           </div>
         </div>
@@ -92,9 +163,33 @@ function ShopPage() {
             <div className="filter-block">
               <h4>Category</h4>
               <ul>
-                <li>All (143)</li>
-                <li>Products (124)</li>
-                <li>Services (19)</li>
+                <li>
+                  <button
+                    type="button"
+                    onClick={() => setTypeFilter('all')}
+                    style={{ border: 0, background: 'none', padding: 0, cursor: 'pointer', color: typeFilter === 'all' ? '#2f2a42' : '#5f5873', fontWeight: typeFilter === 'all' ? 700 : 400 }}
+                  >
+                    All ({allCount})
+                  </button>
+                </li>
+                <li>
+                  <button
+                    type="button"
+                    onClick={() => setTypeFilter('product')}
+                    style={{ border: 0, background: 'none', padding: 0, cursor: 'pointer', color: typeFilter === 'product' ? '#2f2a42' : '#5f5873', fontWeight: typeFilter === 'product' ? 700 : 400 }}
+                  >
+                    Products ({productCount})
+                  </button>
+                </li>
+                <li>
+                  <button
+                    type="button"
+                    onClick={() => setTypeFilter('service')}
+                    style={{ border: 0, background: 'none', padding: 0, cursor: 'pointer', color: typeFilter === 'service' ? '#2f2a42' : '#5f5873', fontWeight: typeFilter === 'service' ? 700 : 400 }}
+                  >
+                    Services ({serviceCount})
+                  </button>
+                </li>
                 <li>Skincare (45)</li>
                 <li>Makeup (32)</li>
               </ul>
@@ -102,10 +197,35 @@ function ShopPage() {
             <div className="filter-block">
               <h4>Price range</h4>
               <div className="range-row">
-                <span>$4</span>
-                <span>$100</span>
-                <span>$200+</span>
+                <button
+                  type="button"
+                  onClick={() => setPriceRange('0_49')}
+                  style={{ border: 0, background: 'none', padding: 0, cursor: 'pointer', color: priceRange === '0_49' ? '#2f2a42' : '#5f5873', fontWeight: priceRange === '0_49' ? 700 : 400 }}
+                >
+                  €0-49
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPriceRange('50_99')}
+                  style={{ border: 0, background: 'none', padding: 0, cursor: 'pointer', color: priceRange === '50_99' ? '#2f2a42' : '#5f5873', fontWeight: priceRange === '50_99' ? 700 : 400 }}
+                >
+                  €50-99
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPriceRange('100_plus')}
+                  style={{ border: 0, background: 'none', padding: 0, cursor: 'pointer', color: priceRange === '100_plus' ? '#2f2a42' : '#5f5873', fontWeight: priceRange === '100_plus' ? 700 : 400 }}
+                >
+                  €100+
+                </button>
               </div>
+              <button
+                type="button"
+                onClick={() => setPriceRange('all')}
+                style={{ marginTop: 8, border: 0, background: 'none', padding: 0, cursor: 'pointer', color: priceRange === 'all' ? '#2f2a42' : '#5f5873', fontWeight: priceRange === 'all' ? 700 : 400, fontSize: 12 }}
+              >
+                Show all prices
+              </button>
             </div>
             <div className="filter-block">
               <h4>Rating</h4>
@@ -127,34 +247,88 @@ function ShopPage() {
 
           <div>
             <div className="shop-grid">
-              {catalogItems.map((item) => (
+              {loading ? (
+                <p className="muted">Loading catalog…</p>
+              ) : error ? (
+                <p className="muted">{error}</p>
+              ) : paginatedItems.length === 0 ? (
+                <p className="muted">No items found for current filters.</p>
+              ) : paginatedItems.map((item) => (
                 <article key={item.id} className="shop-item-card">
-                  <img src={item.image} alt={item.name} />
+                  {item._type === 'product' ? (
+                    <Link to={`/products/${item.id}`} style={{ display: 'block', lineHeight: 0 }}>
+                      <img
+                        src={resolveImageUrl(item.image_url) || FALLBACK_PRODUCT}
+                        alt={getLocalizedField(item, 'name', i18n.language)}
+                        onError={e => { e.target.src = FALLBACK_PRODUCT }}
+                      />
+                    </Link>
+                  ) : (
+                    <img
+                      src={resolveImageUrl(item.image_url) || FALLBACK_SERVICE}
+                      alt={getLocalizedField(item, 'name', i18n.language)}
+                      onError={e => { e.target.src = FALLBACK_SERVICE }}
+                    />
+                  )}
                   <div className="shop-item-content">
-                    <p className="shop-item-brand">{item.brand}</p>
-                    <h3>{item.name}</h3>
+                    <p className="shop-item-brand">{getLocalizedField(item.vendor, 'name', i18n.language, item.vendor?.name || 'Vendor')}</p>
+                    {item._type === 'product' ? (
+                      <h3>
+                        <Link to={`/products/${item.id}`} style={{ color: 'inherit', textDecoration: 'none' }}>{getLocalizedField(item, 'name', i18n.language)}</Link>
+                      </h3>
+                    ) : (
+                      <h3>{getLocalizedField(item, 'name', i18n.language)}</h3>
+                    )}
+                    <p className="muted" style={{ marginTop: -6, marginBottom: 10, fontSize: 12 }}>
+                      {(item._type === 'service' ? item.service_category?.name : item.product_category?.name) || 'Uncategorized'}
+                    </p>
                     <div className="shop-item-meta">
-                      <strong>${item.price.toFixed(2)}</strong>
-                      {item.type === 'Service' ? (
-                        <Link to="/services/1">View service</Link>
-                      ) : (
-                        <Link to="/products/1">View product</Link>
-                      )}
+                      <strong>€{Number(item.price).toFixed(2)}</strong>
+                      {item._type === 'service' ? (
+                        <Link to={`/services/${item.id}`}>View service</Link>
+                      ) : null}
                     </div>
+                    {item._type === 'product' && (
+                      <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
+                        <button
+                          type="button"
+                          onClick={() => handleAddToCart(item, false)}
+                          disabled={cartFeedback[item.id] === 'adding'}
+                          style={{ flex: 1, padding: '6px 10px', fontSize: 12, fontWeight: 600, background: cartFeedback[item.id] === 'added' ? '#10b981' : '#4f46e5', color: '#fff', border: 'none', borderRadius: 7, cursor: 'pointer', transition: 'background 0.2s' }}
+                        >
+                          {cartFeedback[item.id] === 'adding' ? '…' : cartFeedback[item.id] === 'added' ? '✓ Added' : '🛒 Cart'}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleAddToCart(item, true)}
+                          style={{ flex: 1, padding: '6px 10px', fontSize: 12, fontWeight: 600, background: '#f59e0b', color: '#fff', border: 'none', borderRadius: 7, cursor: 'pointer' }}
+                        >
+                          ⚡ Buy Now
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </article>
               ))}
             </div>
 
-            <div className="shop-pagination">
-              <button type="button" className="active">
-                1
-              </button>
-              <button type="button">2</button>
-              <button type="button">3</button>
-              <button type="button">...</button>
-              <button type="button">11</button>
-            </div>
+            {!loading && totalPages > 1 && (
+              <div className="shop-pagination">
+                {Array.from({ length: totalPages }).map((_, idx) => {
+                  const page = idx + 1
+                  return (
+                    <button
+                      key={page}
+                      type="button"
+                      className={page === safePage ? 'active' : ''}
+                      onClick={() => setCurrentPage(page)}
+                    >
+                      {page}
+                    </button>
+                  )
+                })}
+              </div>
+            )}
           </div>
         </div>
       </div>

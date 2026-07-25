@@ -19,6 +19,14 @@ class CheckoutRequest extends FormRequest
      */
     public function rules(): array
     {
-        return ['items' => ['required', 'array', 'min:1'], 'items.*.vendor_id' => ['required', 'exists:vendors,id'], 'items.*.product_id' => ['required', 'exists:products,id'], 'items.*.quantity' => ['required', 'integer', 'min:1']];
+        return [
+            'items'            => ['required', 'array', 'min:1'],
+            'items.*.vendor_id'  => ['required', 'exists:vendors,id'],
+            'items.*.product_id' => ['required', 'exists:products,id'],
+            'items.*.quantity'   => ['required', 'integer', 'min:1'],
+            'delivery_address'   => ['required', 'string', 'max:500'],
+            'phone'              => ['nullable', 'string', 'max:30'],
+            'notes'              => ['nullable', 'string', 'max:1000'],
+        ];
     }
 }

@@ -1,0 +1,14 @@
+# Backend (Laravel)
+backend/vendor/
+backend/.env
+backend/storage/*.key
+backend/node_modules/
+backend/public/storage
+
+# Frontend (React/Vite)
+frontend/node_modules/
+frontend/dist/
+
+# General
+.DS_Store
+*.log

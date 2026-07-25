@@ -19,6 +19,6 @@ class StoreServiceRequest extends FormRequest
      */
     public function rules(): array
     {
-        return ['vendor_id' => ['required', 'exists:vendors,id'], 'name' => ['required', 'string', 'max:255'], 'price' => ['required', 'numeric', 'min:0'], 'duration_minutes' => ['required', 'integer', 'min:5'], 'description' => ['nullable', 'string']];
+        return ['vendor_id' => ['required', 'exists:vendors,id'], 'service_category_id' => ['nullable', 'exists:service_categories,id'], 'name' => ['required', 'string', 'max:255'], 'name_it' => ['nullable', 'string', 'max:255'], 'price' => ['required', 'numeric', 'min:0'], 'duration_minutes' => ['required', 'integer', 'min:5'], 'description' => ['nullable', 'string'], 'description_it' => ['nullable', 'string']];
     }
 }
